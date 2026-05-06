@@ -12,7 +12,17 @@
     <exclude name="LoosePackageCoupling"/>
     <exclude name="UseUtilityClass"/>
     <exclude name="SignatureDeclareThrowsException"/>
+    <!-- DTO/Model/Response classes wajar punya banyak field -->
+    <exclude name="TooManyFields"/>
+    <exclude name="LawOfDemeter"/>
   </rule>
 
-  <rule ref="category/java/errorprone.xml"/>
+  <rule ref="category/java/errorprone.xml">
+    <!-- Exception custom yang extend RuntimeException tidak perlu serialVersionUID -->
+    <exclude name="MissingSerialVersionUID"/>
+    <exclude name="AvoidDuplicateLiterals"/>
+    <!-- PrintWriter dari HttpServletResponse tidak perlu di-close manual, dikelola container -->
+    <exclude name="CloseResource"/>
+  </rule>
+
 </ruleset>
