@@ -6,7 +6,17 @@
 
   <description>PMD rules for test source set.</description>
 
-  <rule ref="category/java/bestpractices.xml"/>
-  <rule ref="category/java/errorprone.xml"/>
+  <rule ref="category/java/bestpractices.xml">
+    <exclude name="UnitTestShouldIncludeAssert"/>
+    <exclude name="UnitTestContainsTooManyAsserts"/>
+  </rule>
+
+  <rule ref="category/java/codestyle.xml">
+    <exclude name="AvoidDuplicateLiterals"/>
+  </rule>
+
+  <rule ref="category/java/errorprone.xml">
+    <exclude name="MissingSerialVersionUID"/>
+  </rule>
 
 </ruleset>

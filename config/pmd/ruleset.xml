@@ -6,7 +6,9 @@
 
   <description>PMD rules for production/main source set.</description>
 
-  <rule ref="category/java/bestpractices.xml">
+  <rule ref="category/java/bestpractices.xml"/>
+
+  <rule ref="category/java/codestyle.xml">
     <!-- String constants in annotations (e.g. @RequestHeader) are idiomatic Spring, bukan code smell -->
     <exclude name="AvoidDuplicateLiterals"/>
   </rule>
