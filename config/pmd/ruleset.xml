@@ -14,6 +14,7 @@
     <exclude name="SignatureDeclareThrowsException"/>
     <!-- DTO/Model/Response classes wajar punya banyak field -->
     <exclude name="TooManyFields"/>
+    <exclude name="LawOfDemeter"/>
   </rule>
 
   <rule ref="category/java/errorprone.xml">

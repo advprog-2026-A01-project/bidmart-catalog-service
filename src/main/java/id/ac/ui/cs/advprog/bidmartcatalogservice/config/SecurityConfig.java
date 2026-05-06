@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 
 @Configuration
 @EnableWebSecurity
@@ -66,8 +65,7 @@ public class SecurityConfig {
             if (!gatewaySecret.equals(incomingSecret)) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.setContentType("application/json");
-                PrintWriter writer = response.getWriter();
-                writer.write("{\"error\": \"Forbidden\", \"message\": \"Missing or invalid gateway secret\"}");
+                response.getWriter().write("{\"error\": \"Forbidden\", \"message\": \"Missing or invalid gateway secret\"}");
                 return;
             }
 
