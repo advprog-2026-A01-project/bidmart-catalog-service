@@ -6,13 +6,22 @@
 
   <description>PMD rules for production/main source set.</description>
 
-  <rule ref="category/java/bestpractices.xml"/>
+  <rule ref="category/java/bestpractices.xml">
+    <!-- String constants in annotations (e.g. @RequestHeader) are idiomatic Spring, bukan code smell -->
+    <exclude name="AvoidDuplicateLiterals"/>
+  </rule>
 
   <rule ref="category/java/design.xml">
     <exclude name="LoosePackageCoupling"/>
     <exclude name="UseUtilityClass"/>
     <exclude name="SignatureDeclareThrowsException"/>
+    <!-- DTO/Model/Response classes wajar punya banyak field -->
+    <exclude name="TooManyFields"/>
   </rule>
 
-  <rule ref="category/java/errorprone.xml"/>
+  <rule ref="category/java/errorprone.xml">
+    <!-- Exception custom yang extend RuntimeException tidak perlu serialVersionUID -->
+    <exclude name="MissingSerialVersionUID"/>
+  </rule>
+
 </ruleset>
