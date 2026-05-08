@@ -24,7 +24,7 @@ public class AuctionEventConsumer {
         if (listingId == null) return;
 
         try {
-            BigDecimal newPrice = new BigDecimal(event.get("newPrice").toString());
+            BigDecimal newPrice = parseBigDecimal(event.get("newPrice"));
             int bidCount = (int) event.get("bidCount");
             listingService.updateListingPriceAndBidCount(listingId, newPrice, bidCount);
             log.info("Updated listing {} price to {} bidCount {}", listingId, newPrice, bidCount);
@@ -47,10 +47,7 @@ public class AuctionEventConsumer {
                 return;
             }
 
-            BigDecimal finalPrice = event.get("finalPrice") != null
-                    ? new BigDecimal(event.get("finalPrice").toString())
-                    : null;
-
+            BigDecimal finalPrice = parseBigDecimal(event.get("finalPrice"));
             listingService.updateListingStatus(listingId, status, finalPrice);
             log.info("Updated listing {} status to {}", listingId, status);
         } catch (IllegalArgumentException e) {
@@ -72,5 +69,10 @@ public class AuctionEventConsumer {
             log.warn("Invalid listingId in event: {}", event.get("listingId"));
             return null;
         }
+    }
+
+    private BigDecimal parseBigDecimal(Object value) {
+        if (value == null) return null;
+        return new BigDecimal(value.toString());
     }
 }
