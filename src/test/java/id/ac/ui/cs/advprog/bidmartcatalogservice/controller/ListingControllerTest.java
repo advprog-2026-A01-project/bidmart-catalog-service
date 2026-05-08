@@ -78,7 +78,7 @@ class ListingControllerTest {
 
     @Test
     void searchListings_returnsOk() throws Exception {
-        when(listingService.searchListings(any(), any(), any(), any(), any(), any(Pageable.class)))
+        when(listingService.searchListings(any(), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(sampleResponse)));
 
         mockMvc.perform(get("/api/listings")
@@ -89,7 +89,7 @@ class ListingControllerTest {
 
     @Test
     void searchListings_withKeyword_returnsFilteredResults() throws Exception {
-        when(listingService.searchListings(eq("laptop"), any(), any(), any(), any(), any(Pageable.class)))
+        when(listingService.searchListings(eq("laptop"), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(sampleResponse)));
 
         mockMvc.perform(get("/api/listings?keyword=laptop")

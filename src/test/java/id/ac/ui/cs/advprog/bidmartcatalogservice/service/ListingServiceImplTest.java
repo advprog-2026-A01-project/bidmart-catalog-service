@@ -147,11 +147,11 @@ class ListingServiceImplTest {
     @Test
     void searchListings_returnsPageOfListings() {
         Page<Listing> page = new PageImpl<>(List.of(listing));
-        when(listingRepository.searchListings(any(), any(), any(), any(), any(), any()))
+        when(listingRepository.searchListings(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(page);
 
         Page<ListingResponse> result = listingService.searchListings(
-                null, null, null, null, null, PageRequest.of(0, 20));
+                null, null, null, null, null, null, null, PageRequest.of(0, 20));
 
         assertThat(result).isNotEmpty();
         assertThat(result.getContent()).hasSize(1);
@@ -160,11 +160,11 @@ class ListingServiceImplTest {
     @Test
     void searchListings_withKeyword_passesKeywordToRepository() {
         Page<Listing> page = new PageImpl<>(List.of(listing));
-        when(listingRepository.searchListings(eq("laptop"), any(), any(), any(), any(), any()))
+        when(listingRepository.searchListings(eq("laptop"), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(page);
 
         Page<ListingResponse> result = listingService.searchListings(
-                "laptop", null, null, null, null, PageRequest.of(0, 20));
+                "laptop", null, null, null, null, null, null, PageRequest.of(0, 20));
 
         assertThat(result.getContent()).hasSize(1);
     }
