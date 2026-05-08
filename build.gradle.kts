@@ -4,6 +4,7 @@ plugins {
     java
     id("org.springframework.boot") version "3.5.14"
     id("io.spring.dependency-management") version "1.1.7"
+    id("org.sonarqube") version "7.3.0.8198"
     pmd
     jacoco
 }
@@ -92,5 +93,12 @@ tasks.jacocoTestReport {
     reports {
         xml.required.set(true)
         html.required.set(true)
+    }
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "advprog-2026-A01-project_bidmart-catalog-service")
+        property("sonar.organization", "advprog-2026-a01-project-1")
     }
 }
