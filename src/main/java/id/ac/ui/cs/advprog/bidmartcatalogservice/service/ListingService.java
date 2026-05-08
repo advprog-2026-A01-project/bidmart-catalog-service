@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,6 +26,8 @@ public interface ListingService {
             UUID categoryId,
             BigDecimal minPrice,
             BigDecimal maxPrice,
+            Instant endsBefore,
+            Instant endsAfter,
             List<ListingStatus> statuses,
             Pageable pageable
     );

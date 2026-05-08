@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,29 +36,32 @@ public class ListingController {
     private final ListingService listingService;
 
     // GET /api/listings?keyword=&categoryId=&minPrice=&maxPrice=&page=&size=
-    // (public) buyer browse listing aktif
+    // public
     @GetMapping
     public ResponseEntity<Page<ListingResponse>> searchListings(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Instant endsBefore,
+            @RequestParam(required = false) Instant endsAfter,
             @RequestParam(required = false) List<ListingStatus> statuses,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
 
         return ResponseEntity.ok(
-                listingService.searchListings(keyword, categoryId, minPrice, maxPrice, statuses, pageable));
+                listingService.searchListings(keyword, categoryId, minPrice, maxPrice,
+                        endsBefore, endsAfter, statuses, pageable));
     }
 
     // GET /api/listings/{id}
-    // publik - lihat detail listing
+    // publik
     @GetMapping("/{id}")
     public ResponseEntity<ListingResponse> getListingById(@PathVariable UUID id) {
         return ResponseEntity.ok(listingService.getListingById(id));
     }
 
     // GET /api/listings/my
-    // seller - lihat semua listing miliknya sendiri
+    // seller
     @GetMapping("/my")
     public ResponseEntity<List<ListingResponse>> getMyListings(
             @RequestHeader("X-User-Id") String userId) {
@@ -65,7 +69,7 @@ public class ListingController {
     }
 
     // POST /api/listings
-    // seller - buat listing baru
+    // seller
     @PostMapping
     public ResponseEntity<ListingResponse> createListing(
             @RequestHeader("X-User-Id") String userId,
@@ -77,7 +81,7 @@ public class ListingController {
     }
 
     // PUT /api/listings/{id}
-    // seller - update listing miliknya (hanya saat DRAFT dan belum ada bid)
+    // seller (hanya saat DRAFT dan belum ada bid)
     @PutMapping("/{id}")
     public ResponseEntity<ListingResponse> updateListing(
             @PathVariable UUID id,
@@ -88,7 +92,7 @@ public class ListingController {
     }
 
     // DELETE /api/listings/{id}
-    // seller - cancel listing miliknya (hanya saat DRAFT dan belum ada bid)
+    // seller (hanya saat DRAFT dan belum ada bid)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelListing(
             @PathVariable UUID id,
