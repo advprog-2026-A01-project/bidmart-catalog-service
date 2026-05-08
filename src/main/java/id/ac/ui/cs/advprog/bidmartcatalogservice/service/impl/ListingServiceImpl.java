@@ -70,6 +70,7 @@ public class ListingServiceImpl implements ListingService {
     public Page<ListingResponse> searchListings(
             String keyword, UUID categoryId,
             BigDecimal minPrice, BigDecimal maxPrice,
+            Instant endsBefore, Instant endsAfter,
             List<ListingStatus> statuses, Pageable pageable) {
 
         List<ListingStatus> effectiveStatuses = (statuses == null || statuses.isEmpty())
@@ -77,7 +78,8 @@ public class ListingServiceImpl implements ListingService {
                 : statuses;
 
         return listingRepository
-                .searchListings(keyword, categoryId, minPrice, maxPrice, effectiveStatuses, pageable)
+                .searchListings(keyword, categoryId, minPrice, maxPrice,
+                        endsBefore, endsAfter, effectiveStatuses, pageable)
                 .map(ListingResponse::from);
     }
 
