@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package bidmart.catalog.v1;
+
+option java_multiple_files = true;
+option java_package = "id.ac.ui.cs.advprog.bidmart.catalog.grpc";
+option java_outer_classname = "CatalogInternalProto";
+
+service CatalogInternalService {
+  rpc ValidateListing(ValidateListingRequest) returns (ValidateListingResponse);
+}
+
+message ValidateListingRequest {
+  string listing_id = 1;
+  string caller_service = 2;
+}
+
+message ValidateListingResponse {
+  bool biddable = 1;
+  string listing_id = 2;
+  string message = 3;
+}
