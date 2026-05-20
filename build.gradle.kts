@@ -4,7 +4,9 @@ plugins {
     java
     id("org.springframework.boot") version "3.5.14"
     id("io.spring.dependency-management") version "1.1.7"
+    id("org.sonarqube") version "7.3.0.8198"
     pmd
+    jacoco
 }
 
 group = "id.ac.ui.cs.advprog"
@@ -28,6 +30,8 @@ repositories {
 }
 
 dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -74,4 +78,27 @@ tasks.named<Pmd>("pmdMain") {
 
 tasks.named<Pmd>("pmdTest") {
     ruleSetFiles = files("$rootDir/config/pmd/ruleset-test.xml")
+}
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "advprog-2026-A01-project_bidmart-catalog-service")
+        property("sonar.organization", "advprog-2026-a01-project-1")
+    }
 }

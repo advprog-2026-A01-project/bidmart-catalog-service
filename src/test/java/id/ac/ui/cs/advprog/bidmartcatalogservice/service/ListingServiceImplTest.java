@@ -1,0 +1,352 @@
+package id.ac.ui.cs.advprog.bidmartcatalogservice.service;
+
+import id.ac.ui.cs.advprog.bidmartcatalogservice.dto.request.CreateListingRequest;
+import id.ac.ui.cs.advprog.bidmartcatalogservice.dto.request.UpdateListingRequest;
+import id.ac.ui.cs.advprog.bidmartcatalogservice.dto.response.ListingResponse;
+import id.ac.ui.cs.advprog.bidmartcatalogservice.exception.CategoryNotFoundException;
+import id.ac.ui.cs.advprog.bidmartcatalogservice.exception.ListingNotFoundException;
+import id.ac.ui.cs.advprog.bidmartcatalogservice.exception.ListingNotEditableException;
+import id.ac.ui.cs.advprog.bidmartcatalogservice.model.Category;
+import id.ac.ui.cs.advprog.bidmartcatalogservice.model.Listing;
+import id.ac.ui.cs.advprog.bidmartcatalogservice.model.ListingStatus;
+import id.ac.ui.cs.advprog.bidmartcatalogservice.repository.CategoryRepository;
+import id.ac.ui.cs.advprog.bidmartcatalogservice.repository.ListingRepository;
+import id.ac.ui.cs.advprog.bidmartcatalogservice.service.impl.ListingServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class ListingServiceImplTest {
+
+    @Mock
+    private ListingRepository listingRepository;
+
+    @Mock
+    private CategoryRepository categoryRepository;
+
+    @InjectMocks
+    private ListingServiceImpl listingService;
+
+    private Category category;
+    private Listing listing;
+    private UUID listingId;
+    private UUID categoryId;
+    private String sellerId;
+
+    @BeforeEach
+    void setUp() {
+        categoryId = UUID.randomUUID();
+        listingId = UUID.randomUUID();
+        sellerId = "user-123";
+
+        category = Category.builder()
+                .id(categoryId)
+                .name("Elektronik")
+                .build();
+
+        listing = Listing.builder()
+                .id(listingId)
+                .title("Laptop Gaming")
+                .description("Laptop bagus")
+                .sellerId(sellerId)
+                .sellerUsername("seller1")
+                .category(category)
+                .startingPrice(new BigDecimal("5000000"))
+                .currentPrice(new BigDecimal("5000000"))
+                .durationMinutes(60)
+                .status(ListingStatus.DRAFT)
+                .bidCount(0)
+                .build();
+    }
+
+    // -------------------------------------------------------------------------
+    // createListing
+    // -------------------------------------------------------------------------
+
+    @Test
+    void createListing_withValidRequest_returnsListingResponse() {
+        CreateListingRequest request = CreateListingRequest.builder()
+                .title("Laptop Gaming")
+                .description("Laptop bagus")
+                .categoryId(categoryId)
+                .startingPrice(new BigDecimal("5000000"))
+                .durationMinutes(60)
+                .build();
+
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        ListingResponse response = listingService.createListing(sellerId, "seller1", request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getTitle()).isEqualTo("Laptop Gaming");
+        assertThat(response.getSellerId()).isEqualTo(sellerId);
+        verify(listingRepository).save(any(Listing.class));
+    }
+
+    @Test
+    void createListing_withInvalidCategory_throwsCategoryNotFoundException() {
+        CreateListingRequest request = CreateListingRequest.builder()
+                .title("Laptop Gaming")
+                .categoryId(categoryId)
+                .startingPrice(new BigDecimal("5000000"))
+                .durationMinutes(60)
+                .build();
+
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> listingService.createListing(sellerId, "seller1", request))
+                .isInstanceOf(CategoryNotFoundException.class);
+    }
+
+    // -------------------------------------------------------------------------
+    // getListingById
+    // -------------------------------------------------------------------------
+
+    @Test
+    void getListingById_withExistingId_returnsListingResponse() {
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+
+        ListingResponse response = listingService.getListingById(listingId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getId()).isEqualTo(listingId);
+    }
+
+    @Test
+    void getListingById_withNonExistingId_throwsListingNotFoundException() {
+        when(listingRepository.findById(listingId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> listingService.getListingById(listingId))
+                .isInstanceOf(ListingNotFoundException.class);
+    }
+
+    // -------------------------------------------------------------------------
+    // searchListings
+    // -------------------------------------------------------------------------
+
+    @Test
+    void searchListings_returnsPageOfListings() {
+        Page<Listing> page = new PageImpl<>(List.of(listing));
+        when(listingRepository.searchListings(any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(page);
+
+        Page<ListingResponse> result = listingService.searchListings(
+                null, null, null, null, null, null, null, PageRequest.of(0, 20));
+
+        assertThat(result).isNotEmpty();
+        assertThat(result.getContent()).hasSize(1);
+    }
+
+    @Test
+    void searchListings_withKeyword_passesKeywordToRepository() {
+        Page<Listing> page = new PageImpl<>(List.of(listing));
+        when(listingRepository.searchListings(eq("laptop"), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(page);
+
+        Page<ListingResponse> result = listingService.searchListings(
+                "laptop", null, null, null, null, null, null, PageRequest.of(0, 20));
+
+        assertThat(result.getContent()).hasSize(1);
+    }
+
+    // -------------------------------------------------------------------------
+    // getMyListings
+    // -------------------------------------------------------------------------
+
+    @Test
+    void getMyListings_returnsSellersListings() {
+        when(listingRepository.findBySellerId(sellerId)).thenReturn(List.of(listing));
+
+        List<ListingResponse> result = listingService.getMyListings(sellerId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getSellerId()).isEqualTo(sellerId);
+    }
+
+    @Test
+    void getMyListings_withNoListings_returnsEmptyList() {
+        when(listingRepository.findBySellerId(sellerId)).thenReturn(List.of());
+
+        List<ListingResponse> result = listingService.getMyListings(sellerId);
+
+        assertThat(result).isEmpty();
+    }
+
+    // -------------------------------------------------------------------------
+    // updateListing
+    // -------------------------------------------------------------------------
+
+    @Test
+    void updateListing_withValidRequest_updatesTitle() {
+        UpdateListingRequest request = UpdateListingRequest.builder()
+                .title("Laptop Gaming Updated")
+                .build();
+
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        listingService.updateListing(listingId, sellerId, request);
+
+        verify(listingRepository).save(any(Listing.class));
+    }
+
+    @Test
+    void updateListing_withListingHasBids_throwsListingNotEditableException() {
+        listing.setBidCount(1); // sudah ada bid
+        UpdateListingRequest request = UpdateListingRequest.builder()
+                .title("New Title")
+                .build();
+
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+
+        assertThatThrownBy(() -> listingService.updateListing(listingId, sellerId, request))
+                .isInstanceOf(ListingNotEditableException.class);
+    }
+
+    @Test
+    void updateListing_withActiveStatus_throwsListingNotEditableException() {
+        listing.setStatus(ListingStatus.ACTIVE);
+        UpdateListingRequest request = UpdateListingRequest.builder()
+                .title("New Title")
+                .build();
+
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+
+        assertThatThrownBy(() -> listingService.updateListing(listingId, sellerId, request))
+                .isInstanceOf(ListingNotEditableException.class);
+    }
+
+    @Test
+    void updateListing_byDifferentSeller_throwsListingNotFoundException() {
+        UpdateListingRequest request = UpdateListingRequest.builder()
+                .title("New Title")
+                .build();
+
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+
+        assertThatThrownBy(() -> listingService.updateListing(listingId, "other-seller", request))
+                .isInstanceOf(ListingNotFoundException.class);
+    }
+
+    // -------------------------------------------------------------------------
+    // cancelListing
+    // -------------------------------------------------------------------------
+
+    @Test
+    void cancelListing_withDraftListing_setsStatusToUnsold() {
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        listingService.cancelListing(listingId, sellerId);
+
+        assertThat(listing.getStatus()).isEqualTo(ListingStatus.UNSOLD);
+        verify(listingRepository).save(listing);
+    }
+
+    @Test
+    void cancelListing_withActiveListing_throwsListingNotEditableException() {
+        listing.setStatus(ListingStatus.ACTIVE);
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+
+        assertThatThrownBy(() -> listingService.cancelListing(listingId, sellerId))
+                .isInstanceOf(ListingNotEditableException.class);
+    }
+
+    @Test
+    void cancelListing_byDifferentSeller_throwsListingNotFoundException() {
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+
+        assertThatThrownBy(() -> listingService.cancelListing(listingId, "other-seller"))
+                .isInstanceOf(ListingNotFoundException.class);
+    }
+
+    // -------------------------------------------------------------------------
+    // isListingBiddable
+    // -------------------------------------------------------------------------
+
+    @Test
+    void isListingBiddable_withActiveListing_returnsTrue() {
+        when(listingRepository.existsByIdAndStatusIn(eq(listingId), any()))
+                .thenReturn(true);
+
+        assertThat(listingService.isListingBiddable(listingId)).isTrue();
+    }
+
+    @Test
+    void isListingBiddable_withDraftListing_returnsFalse() {
+        when(listingRepository.existsByIdAndStatusIn(eq(listingId), any()))
+                .thenReturn(false);
+
+        assertThat(listingService.isListingBiddable(listingId)).isFalse();
+    }
+
+    // -------------------------------------------------------------------------
+    // updateListingPriceAndBidCount
+    // -------------------------------------------------------------------------
+
+    @Test
+    void updateListingPriceAndBidCount_withExistingListing_updatesPriceAndCount() {
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        listingService.updateListingPriceAndBidCount(listingId, new BigDecimal("6000000"), 3);
+
+        assertThat(listing.getCurrentPrice()).isEqualByComparingTo("6000000");
+        assertThat(listing.getBidCount()).isEqualTo(3);
+    }
+
+    @Test
+    void updateListingPriceAndBidCount_withNonExistingListing_doesNothing() {
+        when(listingRepository.findById(listingId)).thenReturn(Optional.empty());
+
+        // Tidak throw exception — silent ignore
+        listingService.updateListingPriceAndBidCount(listingId, new BigDecimal("6000000"), 3);
+    }
+
+    // -------------------------------------------------------------------------
+    // updateListingStatus
+    // -------------------------------------------------------------------------
+
+    @Test
+    void updateListingStatus_withExistingListing_updatesStatus() {
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        listingService.updateListingStatus(listingId, ListingStatus.WON, new BigDecimal("7000000"));
+
+        assertThat(listing.getStatus()).isEqualTo(ListingStatus.WON);
+        assertThat(listing.getCurrentPrice()).isEqualByComparingTo("7000000");
+    }
+
+    @Test
+    void updateListingStatus_withNullFinalPrice_doesNotUpdatePrice() {
+        BigDecimal originalPrice = listing.getCurrentPrice();
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        listingService.updateListingStatus(listingId, ListingStatus.UNSOLD, null);
+
+        assertThat(listing.getStatus()).isEqualTo(ListingStatus.UNSOLD);
+        assertThat(listing.getCurrentPrice()).isEqualByComparingTo(originalPrice);
+    }
+}
