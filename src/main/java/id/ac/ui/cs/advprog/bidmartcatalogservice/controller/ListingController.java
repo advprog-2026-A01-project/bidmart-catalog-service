@@ -101,4 +101,14 @@ public class ListingController {
         listingService.cancelListing(id, userId);
         return ResponseEntity.noContent().build();
     }
+
+    // POST /api/listings/{id}/publish
+    // seller: aktifkan listing dari DRAFT -> ACTIVE
+    @PostMapping("/{id}/publish")
+    public ResponseEntity<ListingResponse> publishListing(
+            @PathVariable UUID id,
+            @RequestHeader("X-User-Id") String userId) {
+
+        return ResponseEntity.ok(listingService.publishListing(id, userId));
+    }
 }
