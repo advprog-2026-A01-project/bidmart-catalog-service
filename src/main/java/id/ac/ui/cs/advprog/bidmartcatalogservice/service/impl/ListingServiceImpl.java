@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ListingServiceImpl implements ListingService {
@@ -205,5 +207,37 @@ public class ListingServiceImpl implements ListingService {
         listing.setUpdatedAt(now);
 
         return ListingResponse.from(listingRepository.save(listing));
+    }
+
+    @Override
+    @Transactional
+    public void closeExpiredListings() {
+        List<Listing> expiredListings = listingRepository.findExpiredListings(
+                List.of(ListingStatus.ACTIVE, ListingStatus.EXTENDED),
+                Instant.now()
+        );
+
+        for (Listing listing : expiredListings) {
+            ListingStatus finalStatus = determineClosingStatus(listing);
+            listing.setStatus(finalStatus);
+            listing.setUpdatedAt(Instant.now());
+            listingRepository.save(listing);
+            log.info("Closed listing {} with status {}", listing.getId(), finalStatus);
+        }
+    }
+
+    private ListingStatus determineClosingStatus(Listing listing) {
+        // tidak ada bid sama sekali -> UNSOLD
+        if (listing.getBidCount() == 0) {
+            return ListingStatus.UNSOLD;
+        }
+        // tidak ada reserve price -> langsung WON
+        if (listing.getReservePrice() == null) {
+            return ListingStatus.WON;
+        }
+        // reserve price terpenuhi -> WON, tidak -> UNSOLD
+        return listing.getCurrentPrice().compareTo(listing.getReservePrice()) >= 0
+                ? ListingStatus.WON
+                : ListingStatus.UNSOLD;
     }
 }
