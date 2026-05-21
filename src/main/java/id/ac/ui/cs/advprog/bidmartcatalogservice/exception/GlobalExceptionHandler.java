@@ -50,4 +50,9 @@ public class GlobalExceptionHandler {
         body.put("timestamp", Instant.now().toString());
         return ResponseEntity.status(status).body(body);
     }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Map<String, Object>> handleForbidden(ForbiddenException ex) {
+        return buildError(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
 }

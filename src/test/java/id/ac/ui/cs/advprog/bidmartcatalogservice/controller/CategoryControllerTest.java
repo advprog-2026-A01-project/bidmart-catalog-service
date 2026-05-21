@@ -112,6 +112,7 @@ class CategoryControllerTest {
 
         mockMvc.perform(post("/api/categories")
                         .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Role", "ADMIN")
                         .param("name", "Elektronik"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Elektronik"));
@@ -132,6 +133,7 @@ class CategoryControllerTest {
 
         mockMvc.perform(post("/api/categories")
                         .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Role", "ADMIN")
                         .param("name", "Handphone")
                         .param("parentId", parentId.toString()))
                 .andExpect(status().isCreated())
@@ -145,7 +147,8 @@ class CategoryControllerTest {
     @Test
     void deleteCategory_withExistingId_returnsNoContent() throws Exception {
         mockMvc.perform(delete("/api/categories/" + categoryId)
-                        .header("X-Gateway-Secret", gatewaySecret))
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Role", "ADMIN"))
                 .andExpect(status().isNoContent());
     }
 
@@ -155,7 +158,40 @@ class CategoryControllerTest {
                 .when(categoryService).deleteCategory(categoryId);
 
         mockMvc.perform(delete("/api/categories/" + categoryId)
-                        .header("X-Gateway-Secret", gatewaySecret))
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Role", "ADMIN"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void createCategory_withNonAdminRole_returns403() throws Exception {
+        mockMvc.perform(post("/api/categories")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Role", "SELLER")
+                        .param("name", "Elektronik"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createCategory_withMissingRoleHeader_returns400() throws Exception {
+        mockMvc.perform(post("/api/categories")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .param("name", "Elektronik"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deleteCategory_withNonAdminRole_returns403() throws Exception {
+        mockMvc.perform(delete("/api/categories/" + categoryId)
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Role", "BUYER"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteCategory_withMissingRoleHeader_returns400() throws Exception {
+        mockMvc.perform(delete("/api/categories/" + categoryId)
+                        .header("X-Gateway-Secret", gatewaySecret))
+                .andExpect(status().isBadRequest());
     }
 }
