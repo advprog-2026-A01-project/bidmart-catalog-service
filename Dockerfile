@@ -6,7 +6,10 @@ COPY build.gradle.kts .
 COPY settings.gradle.kts .
 COPY src src
 COPY config config
-RUN chmod +x gradlew && ./gradlew bootJar -x test
+RUN chmod +x gradlew && \
+    ./gradlew dependencies --configuration compileClasspath -x test -x generateProto 2>/dev/null || true && \
+    find /root/.gradle -name "*.exe" -exec chmod +x {} \; && \
+    ./gradlew bootJar -x test
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
