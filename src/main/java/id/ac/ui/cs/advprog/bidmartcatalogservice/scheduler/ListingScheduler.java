@@ -14,7 +14,7 @@ public class ListingScheduler {
     private final ListingService listingService;
 
     // jalan setiap 60 detik
-    @Scheduled(fixedDelay = 60_000)
+    @Scheduled(fixedDelayString = "${app.scheduler.listing-close.fixed-delay-ms:60000}")
     public void closeExpiredListings() {
         log.info("Running closeExpiredListings job...");
         listingService.closeExpiredListings();
