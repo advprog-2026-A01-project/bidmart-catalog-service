@@ -23,6 +23,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,8 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ListingServiceImplTest {
@@ -404,5 +405,131 @@ class ListingServiceImplTest {
 
         assertThatThrownBy(() -> listingService.publishListing(listingId, sellerId))
                 .isInstanceOf(ListingNotFoundException.class);
+    }
+
+    // -------------------------------------------------------------------------
+// closeExpiredListings
+// -------------------------------------------------------------------------
+
+    @Test
+    void closeExpiredListings_withExpiredActiveListings_closesThemAll() {
+        Listing expiredListing = Listing.builder()
+                .id(UUID.randomUUID())
+                .title("Expired Auction")
+                .sellerId(sellerId)
+                .sellerUsername("seller1")
+                .category(category)
+                .startingPrice(new BigDecimal("1000000"))
+                .currentPrice(new BigDecimal("1000000"))
+                .reservePrice(new BigDecimal("500000"))
+                .durationMinutes(60)
+                .status(ListingStatus.ACTIVE)
+                .startTime(Instant.now().minus(2, ChronoUnit.HOURS))
+                .endTime(Instant.now().minus(1, ChronoUnit.HOURS))
+                .bidCount(0)
+                .build();
+
+        when(listingRepository.findExpiredListings(any(), any()))
+                .thenReturn(List.of(expiredListing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(expiredListing);
+
+        listingService.closeExpiredListings();
+
+        assertThat(expiredListing.getStatus()).isEqualTo(ListingStatus.UNSOLD);
+        verify(listingRepository).save(expiredListing);
+    }
+
+    @Test
+    void closeExpiredListings_reservePriceMet_setsStatusToWon() {
+        Listing expiredListing = Listing.builder()
+                .id(UUID.randomUUID())
+                .title("Expired Auction with Bids")
+                .sellerId(sellerId)
+                .sellerUsername("seller1")
+                .category(category)
+                .startingPrice(new BigDecimal("1000000"))
+                .currentPrice(new BigDecimal("2000000"))
+                .reservePrice(new BigDecimal("1500000"))
+                .durationMinutes(60)
+                .status(ListingStatus.ACTIVE)
+                .startTime(Instant.now().minus(2, ChronoUnit.HOURS))
+                .endTime(Instant.now().minus(1, ChronoUnit.HOURS))
+                .bidCount(3)
+                .build();
+
+        when(listingRepository.findExpiredListings(any(), any()))
+                .thenReturn(List.of(expiredListing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(expiredListing);
+
+        listingService.closeExpiredListings();
+
+        assertThat(expiredListing.getStatus()).isEqualTo(ListingStatus.WON);
+        verify(listingRepository).save(expiredListing);
+    }
+
+    @Test
+    void closeExpiredListings_reservePriceNotMet_setsStatusToUnsold() {
+        Listing expiredListing = Listing.builder()
+                .id(UUID.randomUUID())
+                .title("Expired Auction Reserve Not Met")
+                .sellerId(sellerId)
+                .sellerUsername("seller1")
+                .category(category)
+                .startingPrice(new BigDecimal("1000000"))
+                .currentPrice(new BigDecimal("1200000"))
+                .reservePrice(new BigDecimal("2000000"))
+                .durationMinutes(60)
+                .status(ListingStatus.ACTIVE)
+                .startTime(Instant.now().minus(2, ChronoUnit.HOURS))
+                .endTime(Instant.now().minus(1, ChronoUnit.HOURS))
+                .bidCount(2)
+                .build();
+
+        when(listingRepository.findExpiredListings(any(), any()))
+                .thenReturn(List.of(expiredListing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(expiredListing);
+
+        listingService.closeExpiredListings();
+
+        assertThat(expiredListing.getStatus()).isEqualTo(ListingStatus.UNSOLD);
+        verify(listingRepository).save(expiredListing);
+    }
+
+    @Test
+    void closeExpiredListings_noReservePrice_withBids_setsStatusToWon() {
+        Listing expiredListing = Listing.builder()
+                .id(UUID.randomUUID())
+                .title("Expired No Reserve")
+                .sellerId(sellerId)
+                .sellerUsername("seller1")
+                .category(category)
+                .startingPrice(new BigDecimal("1000000"))
+                .currentPrice(new BigDecimal("1500000"))
+                .reservePrice(null) // tidak ada reserve price
+                .durationMinutes(60)
+                .status(ListingStatus.ACTIVE)
+                .startTime(Instant.now().minus(2, ChronoUnit.HOURS))
+                .endTime(Instant.now().minus(1, ChronoUnit.HOURS))
+                .bidCount(1)
+                .build();
+
+        when(listingRepository.findExpiredListings(any(), any()))
+                .thenReturn(List.of(expiredListing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(expiredListing);
+
+        listingService.closeExpiredListings();
+
+        assertThat(expiredListing.getStatus()).isEqualTo(ListingStatus.WON);
+        verify(listingRepository).save(expiredListing);
+    }
+
+    @Test
+    void closeExpiredListings_withNoExpiredListings_doesNothing() {
+        when(listingRepository.findExpiredListings(any(), any()))
+                .thenReturn(List.of());
+
+        listingService.closeExpiredListings();
+
+        verify(listingRepository, never()).save(any());
     }
 }
