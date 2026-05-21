@@ -43,4 +43,15 @@ public interface ListingRepository extends JpaRepository<Listing, UUID> {
 
     // untuk internal endpoint, dicall auction-service untuk validasi
     boolean existsByIdAndStatusIn(UUID id, List<ListingStatus> statuses);
+
+    // cari listing ACTIVE/EXTENDED yang endTime-nya sudah lewat
+    @Query("""
+        SELECT l FROM Listing l
+        WHERE l.status IN :statuses
+        AND l.endTime <= :now
+        """)
+    List<Listing> findExpiredListings(
+            @Param("statuses") List<ListingStatus> statuses,
+            @Param("now") Instant now
+    );
 }
