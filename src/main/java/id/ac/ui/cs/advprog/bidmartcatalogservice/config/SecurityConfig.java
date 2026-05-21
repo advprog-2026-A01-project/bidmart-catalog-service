@@ -55,7 +55,7 @@ public class SecurityConfig {
             String path = request.getRequestURI();
 
             // bypass health check
-            if (path.startsWith("/actuator")) {
+            if (path.startsWith("/actuator") || path.startsWith("/api/monitoring")) {
                 filterChain.doFilter(request, response);
                 return;
             }
