@@ -220,4 +220,27 @@ class ListingControllerTest {
                         .header("X-User-Id", userId))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void publishListing_withValidRequest_returnsOk() throws Exception {
+        when(listingService.publishListing(eq(listingId), eq(userId)))
+                .thenReturn(sampleResponse);
+
+        mockMvc.perform(post("/api/listings/" + listingId + "/publish")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(listingId.toString()));
+    }
+
+    @Test
+    void publishListing_withNonExistingId_returns404() throws Exception {
+        when(listingService.publishListing(eq(listingId), eq(userId)))
+                .thenThrow(new ListingNotFoundException(listingId.toString()));
+
+        mockMvc.perform(post("/api/listings/" + listingId + "/publish")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId))
+                .andExpect(status().isNotFound());
+    }
 }
