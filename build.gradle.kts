@@ -1,3 +1,4 @@
+import com.google.protobuf.gradle.id
 import org.gradle.api.plugins.quality.Pmd
 
 plugins {
@@ -5,6 +6,7 @@ plugins {
     id("org.springframework.boot") version "3.5.14"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.sonarqube") version "7.3.0.8198"
+    id("com.google.protobuf") version "0.9.4"
     pmd
     jacoco
 }
@@ -52,6 +54,34 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("com.h2database:h2")
     testAnnotationProcessor("org.projectlombok:lombok")
+
+    // gRPC
+    implementation(platform("io.grpc:grpc-bom:1.64.0"))
+    implementation("io.grpc:grpc-netty-shaded")
+    implementation("io.grpc:grpc-protobuf")
+    implementation("io.grpc:grpc-stub")
+    implementation("javax.annotation:javax.annotation-api:1.3.2")
+
+    // gRPC Spring Boot starter (handles server lifecycle)
+    implementation("net.devh:grpc-spring-boot-starter:3.1.0.RELEASE")
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.3"
+    }
+    plugins {
+        id("grpc") {
+            artifact = "io.grpc:protoc-gen-grpc-java:1.64.0"
+        }
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.plugins {
+                id("grpc")
+            }
+        }
+    }
 }
 
 tasks.withType<Test> {
