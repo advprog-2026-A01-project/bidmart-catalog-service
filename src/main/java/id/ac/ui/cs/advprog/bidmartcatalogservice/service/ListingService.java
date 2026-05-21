@@ -49,4 +49,7 @@ public interface ListingService {
 
     // internal (dipanggil oleh RabbitMQ consumer saat lelang selesai)
     void updateListingStatus(UUID listingId, ListingStatus newStatus, BigDecimal finalPrice);
+
+    // DRAFT to ACTIVE transition
+    ListingResponse publishListing(UUID id, String sellerId);
 }

@@ -349,4 +349,60 @@ class ListingServiceImplTest {
         assertThat(listing.getStatus()).isEqualTo(ListingStatus.UNSOLD);
         assertThat(listing.getCurrentPrice()).isEqualByComparingTo(originalPrice);
     }
+
+    // -------------------------------------------------------------------------
+    // publishListing
+    // -------------------------------------------------------------------------
+
+    @Test
+    void publishListing_withDraftListing_transitionsToActive() {
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        listingService.publishListing(listingId, sellerId);
+
+        assertThat(listing.getStatus()).isEqualTo(ListingStatus.ACTIVE);
+        assertThat(listing.getStartTime()).isNotNull();
+        assertThat(listing.getEndTime()).isNotNull();
+        assertThat(listing.getEndTime()).isAfter(listing.getStartTime());
+        verify(listingRepository).save(listing);
+    }
+
+    @Test
+    void publishListing_endTimeIsStartTimePlusDuration() {
+        listing.setDurationMinutes(60);
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        listingService.publishListing(listingId, sellerId);
+
+        long diffMinutes = java.time.Duration.between(
+                listing.getStartTime(), listing.getEndTime()).toMinutes();
+        assertThat(diffMinutes).isEqualTo(60);
+    }
+
+    @Test
+    void publishListing_withAlreadyActiveListing_throwsListingNotEditableException() {
+        listing.setStatus(ListingStatus.ACTIVE);
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+
+        assertThatThrownBy(() -> listingService.publishListing(listingId, sellerId))
+                .isInstanceOf(ListingNotEditableException.class);
+    }
+
+    @Test
+    void publishListing_byDifferentSeller_throwsListingNotFoundException() {
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+
+        assertThatThrownBy(() -> listingService.publishListing(listingId, "other-seller"))
+                .isInstanceOf(ListingNotFoundException.class);
+    }
+
+    @Test
+    void publishListing_withNonExistingId_throwsListingNotFoundException() {
+        when(listingRepository.findById(listingId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> listingService.publishListing(listingId, sellerId))
+                .isInstanceOf(ListingNotFoundException.class);
+    }
 }
