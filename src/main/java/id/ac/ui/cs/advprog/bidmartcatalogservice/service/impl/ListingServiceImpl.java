@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -186,5 +187,23 @@ public class ListingServiceImpl implements ListingService {
                     .build());
         }
         return images;
+    }
+
+    @Override
+    @Transactional
+    public ListingResponse publishListing(UUID id, String sellerId) {
+        Listing listing = findListingOwnedBy(id, sellerId);
+
+        if (listing.getStatus() != ListingStatus.DRAFT) {
+            throw new ListingNotEditableException(id.toString());
+        }
+
+        Instant now = Instant.now();
+        listing.setStatus(ListingStatus.ACTIVE);
+        listing.setStartTime(now);
+        listing.setEndTime(now.plus(listing.getDurationMinutes(), ChronoUnit.MINUTES));
+        listing.setUpdatedAt(now);
+
+        return ListingResponse.from(listingRepository.save(listing));
     }
 }
