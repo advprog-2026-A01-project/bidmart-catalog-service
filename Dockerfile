@@ -12,4 +12,5 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
 EXPOSE 8082
+EXPOSE 9090
 ENTRYPOINT ["java", "-jar", "app.jar"]
