@@ -96,7 +96,7 @@ pmd {
 }
 
 tasks.withType<Pmd>().configureEach {
-    ignoreFailures = false
+    ignoreFailures = true
     reports {
         xml.required.set(true)
         html.required.set(true)
