@@ -190,13 +190,16 @@ public class ListingServiceImpl implements ListingService {
                 Instant.now()
         );
 
+        Instant now = Instant.now();
         for (Listing listing : expiredListings) {
-            ListingStatus finalStatus = determineClosingStatus(listing);
-            listing.setStatus(finalStatus);
-            listing.setUpdatedAt(Instant.now());
-            listingRepository.save(listing);
-            log.info("Closed listing {} with status {}", listing.getId(), finalStatus);
+            listing.setStatus(determineClosingStatus(listing));
+            listing.setUpdatedAt(now);
         }
+
+        listingRepository.saveAll(expiredListings);
+
+        expiredListings.forEach(l ->
+                log.info("Closed listing {} with status {}", l.getId(), l.getStatus()));
     }
 
     // helpers
