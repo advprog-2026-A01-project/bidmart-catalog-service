@@ -3,6 +3,7 @@ package id.ac.ui.cs.advprog.bidmartcatalogservice.controller;
 import id.ac.ui.cs.advprog.bidmartcatalogservice.dto.request.CreateListingRequest;
 import id.ac.ui.cs.advprog.bidmartcatalogservice.dto.request.UpdateListingRequest;
 import id.ac.ui.cs.advprog.bidmartcatalogservice.dto.response.ListingResponse;
+import id.ac.ui.cs.advprog.bidmartcatalogservice.exception.ForbiddenException;
 import id.ac.ui.cs.advprog.bidmartcatalogservice.model.ListingStatus;
 import id.ac.ui.cs.advprog.bidmartcatalogservice.service.ListingService;
 import jakarta.validation.Valid;
@@ -54,7 +55,7 @@ public class ListingController {
     }
 
     // GET /api/listings/{id}
-    // publik
+    // public
     @GetMapping("/{id}")
     public ResponseEntity<ListingResponse> getListingById(@PathVariable UUID id) {
         return ResponseEntity.ok(listingService.getListingById(id));
@@ -64,7 +65,12 @@ public class ListingController {
     // seller
     @GetMapping("/my")
     public ResponseEntity<List<ListingResponse>> getMyListings(
-            @RequestHeader("X-User-Id") String userId) {
+            @RequestHeader("X-User-Id") String userId,
+            @RequestHeader("X-User-Role") String userRole) {
+
+        if (!"SELLER".equals(userRole) && !"ADMIN".equals(userRole)) {
+            throw new ForbiddenException("view own listings");
+        }
         return ResponseEntity.ok(listingService.getMyListings(userId));
     }
 
@@ -74,8 +80,12 @@ public class ListingController {
     public ResponseEntity<ListingResponse> createListing(
             @RequestHeader("X-User-Id") String userId,
             @RequestHeader("X-Username") String username,
+            @RequestHeader("X-User-Role") String userRole,
             @Valid @RequestBody CreateListingRequest request) {
 
+        if (!"SELLER".equals(userRole) && !"ADMIN".equals(userRole)) {
+            throw new ForbiddenException("create listing");
+        }
         ListingResponse response = listingService.createListing(userId, username, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -86,8 +96,12 @@ public class ListingController {
     public ResponseEntity<ListingResponse> updateListing(
             @PathVariable UUID id,
             @RequestHeader("X-User-Id") String userId,
+            @RequestHeader("X-User-Role") String userRole,
             @RequestBody UpdateListingRequest request) {
 
+        if (!"SELLER".equals(userRole) && !"ADMIN".equals(userRole)) {
+            throw new ForbiddenException("update listing");
+        }
         return ResponseEntity.ok(listingService.updateListing(id, userId, request));
     }
 
@@ -96,8 +110,12 @@ public class ListingController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelListing(
             @PathVariable UUID id,
-            @RequestHeader("X-User-Id") String userId) {
+            @RequestHeader("X-User-Id") String userId,
+            @RequestHeader("X-User-Role") String userRole) {
 
+        if (!"SELLER".equals(userRole) && !"ADMIN".equals(userRole)) {
+            throw new ForbiddenException("cancel listing");
+        }
         listingService.cancelListing(id, userId);
         return ResponseEntity.noContent().build();
     }
@@ -107,8 +125,12 @@ public class ListingController {
     @PostMapping("/{id}/publish")
     public ResponseEntity<ListingResponse> publishListing(
             @PathVariable UUID id,
-            @RequestHeader("X-User-Id") String userId) {
+            @RequestHeader("X-User-Id") String userId,
+            @RequestHeader("X-User-Role") String userRole) {
 
+        if (!"SELLER".equals(userRole) && !"ADMIN".equals(userRole)) {
+            throw new ForbiddenException("publish listing");
+        }
         return ResponseEntity.ok(listingService.publishListing(id, userId));
     }
 }
