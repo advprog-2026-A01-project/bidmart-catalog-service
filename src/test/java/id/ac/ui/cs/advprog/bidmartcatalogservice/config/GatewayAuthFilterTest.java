@@ -59,4 +59,5 @@ class GatewayAuthFilterTest {
         mockMvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk());
     }
+
 }
