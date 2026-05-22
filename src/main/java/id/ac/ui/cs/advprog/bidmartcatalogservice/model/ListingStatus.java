@@ -6,5 +6,6 @@ public enum ListingStatus {
     EXTENDED,
     CLOSED,
     WON,
-    UNSOLD
+    UNSOLD,
+    CANCELLED
 }
