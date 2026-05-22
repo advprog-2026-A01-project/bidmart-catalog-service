@@ -54,7 +54,7 @@ public class ListingController {
                         endsBefore, endsAfter, statuses, pageable));
     }
 
-    // GET /api/listings/{id}
+    // GET
     // public
     @GetMapping("/{id}")
     public ResponseEntity<ListingResponse> getListingById(@PathVariable UUID id) {
@@ -75,7 +75,7 @@ public class ListingController {
         return ResponseEntity.ok(listingService.getMyListings(userId, pageable));
     }
 
-    // POST /api/listings
+    // POST
     // seller
     @PostMapping
     public ResponseEntity<ListingResponse> createListing(
@@ -91,7 +91,7 @@ public class ListingController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // PUT /api/listings/{id}
+    // PUT
     // seller (hanya saat DRAFT dan belum ada bid)
     @PutMapping("/{id}")
     public ResponseEntity<ListingResponse> updateListing(
@@ -106,7 +106,7 @@ public class ListingController {
         return ResponseEntity.ok(listingService.updateListing(id, userId, request));
     }
 
-    // DELETE /api/listings/{id}
+    // DELETE
     // seller (hanya saat DRAFT dan belum ada bid)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelListing(
@@ -121,7 +121,7 @@ public class ListingController {
         return ResponseEntity.noContent().build();
     }
 
-    // POST /api/listings/{id}/publish
+    // POST
     // seller: aktifkan listing dari DRAFT -> ACTIVE
     @PostMapping("/{id}/publish")
     public ResponseEntity<ListingResponse> publishListing(

@@ -18,21 +18,21 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    // GET /api/categories
+    // GET
     // publik
     @GetMapping
     public ResponseEntity<List<CategoryResponse>> getAllCategories() {
         return ResponseEntity.ok(categoryService.getAllCategoriesAsTree());
     }
 
-    // GET /api/categories/{id}
+    // GET
     // publik
     @GetMapping("/{id}")
     public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable UUID id) {
         return ResponseEntity.ok(categoryService.getCategoryById(id));
     }
 
-    // POST /api/categories
+    // POST
     // admin
     @PostMapping
     public ResponseEntity<CategoryResponse> createCategory(
@@ -49,7 +49,7 @@ public class CategoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // DELETE /api/categories/{id}
+    // DELETE
     // admin
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCategory(

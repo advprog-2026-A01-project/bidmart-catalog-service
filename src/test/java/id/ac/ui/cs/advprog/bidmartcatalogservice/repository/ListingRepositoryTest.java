@@ -34,7 +34,6 @@ class ListingRepositoryTest {
     private Category category;
     private Listing activeListing;
     private Listing draftListing;
-    private Listing expiredListing;
     private final String sellerId = "user-123";
 
     @BeforeEach
@@ -73,19 +72,6 @@ class ListingRepositoryTest {
                 .bidCount(0)
                 .build());
 
-        expiredListing = listingRepository.save(Listing.builder()
-                .title("HP Bekas")
-                .sellerId("other-seller")
-                .sellerUsername("seller2")
-                .category(category)
-                .startingPrice(new BigDecimal("1000000"))
-                .currentPrice(new BigDecimal("1200000"))
-                .durationMinutes(60)
-                .status(ListingStatus.ACTIVE)
-                .startTime(Instant.now().minus(2, ChronoUnit.HOURS))
-                .endTime(Instant.now().minus(1, ChronoUnit.HOURS))
-                .bidCount(1)
-                .build());
     }
 
     // -------------------------------------------------------------------------
