@@ -563,4 +563,117 @@ class ListingServiceImplTest {
 
         verify(listingRepository, never()).save(any());
     }
+
+    @Test
+    void createListing_withImageUrls_savesImages() {
+        CreateListingRequest request = CreateListingRequest.builder()
+                .title("Laptop Gaming")
+                .categoryId(categoryId)
+                .startingPrice(new BigDecimal("5000000"))
+                .durationMinutes(60)
+                .imageUrls(List.of("http://img1.jpg", "http://img2.jpg"))
+                .build();
+
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        ListingResponse response = listingService.createListing(sellerId, "seller1", request);
+
+        assertThat(response).isNotNull();
+        verify(listingRepository).save(any(Listing.class));
+    }
+
+    @Test
+    void createListing_withNullImageUrls_savesWithNoImages() {
+        CreateListingRequest request = CreateListingRequest.builder()
+                .title("Laptop Gaming")
+                .categoryId(categoryId)
+                .startingPrice(new BigDecimal("5000000"))
+                .durationMinutes(60)
+                .imageUrls(null)
+                .build();
+
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        ListingResponse response = listingService.createListing(sellerId, "seller1", request);
+
+        assertThat(response).isNotNull();
+    }
+
+    @Test
+    void updateListing_withNewImageUrls_replacesImages() {
+        UpdateListingRequest request = UpdateListingRequest.builder()
+                .imageUrls(List.of("http://new-img1.jpg", "http://new-img2.jpg"))
+                .build();
+
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        listingService.updateListing(listingId, sellerId, request);
+
+        verify(listingRepository).save(listing);
+    }
+
+    @Test
+    void updateListing_withNullFields_doesNotOverwriteExisting() {
+        UpdateListingRequest request = UpdateListingRequest.builder().build();
+
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        ListingResponse response = listingService.updateListing(listingId, sellerId, request);
+
+        assertThat(listing.getTitle()).isEqualTo("Laptop Gaming");
+        assertThat(response).isNotNull();
+    }
+
+    @Test
+    void searchListings_withExplicitStatuses_usesProvidedStatuses() {
+        when(listingRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(listing)));
+
+        var result = listingService.searchListings(
+                null, null, null, null, null, null,
+                List.of(ListingStatus.DRAFT),
+                org.springframework.data.domain.PageRequest.of(0, 20));
+
+        assertThat(result.getContent()).hasSize(1);
+    }
+
+    @Test
+    void closeExpiredListings_withExtendedListingAndBids_setsStatusToWon() {
+        Listing expiredExtended = Listing.builder()
+                .id(UUID.randomUUID())
+                .title("Extended Auction")
+                .sellerId(sellerId)
+                .sellerUsername("seller1")
+                .category(category)
+                .startingPrice(new BigDecimal("1000000"))
+                .currentPrice(new BigDecimal("1500000"))
+                .reservePrice(null)
+                .durationMinutes(120)
+                .status(ListingStatus.EXTENDED)
+                .startTime(Instant.now().minus(3, ChronoUnit.HOURS))
+                .endTime(Instant.now().minus(1, ChronoUnit.HOURS))
+                .bidCount(2)
+                .build();
+
+        when(listingRepository.findExpiredListings(any(), any()))
+                .thenReturn(List.of(expiredExtended));
+        when(listingRepository.save(any(Listing.class))).thenReturn(expiredExtended);
+
+        listingService.closeExpiredListings();
+
+        assertThat(expiredExtended.getStatus()).isEqualTo(ListingStatus.WON);
+    }
+
+    @Test
+    void updateListingStatus_withNonExistingListing_doesNothing() {
+        when(listingRepository.findById(listingId)).thenReturn(Optional.empty());
+
+        listingService.updateListingStatus(listingId, ListingStatus.WON, new BigDecimal("7000000"));
+
+        verify(listingRepository, never()).save(any());
+    }
 }

@@ -131,4 +131,41 @@ class AuctionEventConsumerTest {
 
         verifyNoInteractions(listingService);
     }
+
+    @Test
+    void handleAuctionClosed_withStatusActive_shouldNotCallService() {
+        Map<String, Object> event = new HashMap<>();
+        event.put("listingId", listingId.toString());
+        event.put("finalPrice", "200000.00");
+        event.put("status", "ACTIVE");
+
+        consumer.handleAuctionClosed(event);
+
+        verifyNoInteractions(listingService);
+    }
+
+    @Test
+    void handleAuctionClosed_withStatusDraft_shouldNotCallService() {
+        Map<String, Object> event = new HashMap<>();
+        event.put("listingId", listingId.toString());
+        event.put("finalPrice", "200000.00");
+        event.put("status", "DRAFT");
+
+        consumer.handleAuctionClosed(event);
+
+        verifyNoInteractions(listingService);
+    }
+
+    @Test
+    void handleAuctionClosed_withNullStatus_shouldNotCallService() {
+        Map<String, Object> event = new HashMap<>();
+        event.put("listingId", listingId.toString());
+        event.put("finalPrice", "200000.00");
+        event.put("status", null);
+
+        consumer.handleAuctionClosed(event);
+
+        verifyNoInteractions(listingService);
+    }
+
 }
