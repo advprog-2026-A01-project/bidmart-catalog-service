@@ -15,12 +15,12 @@ import id.ac.ui.cs.advprog.bidmartcatalogservice.repository.ListingRepository;
 import id.ac.ui.cs.advprog.bidmartcatalogservice.repository.ListingSpecification;
 import id.ac.ui.cs.advprog.bidmartcatalogservice.service.ListingService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -129,7 +129,7 @@ public class ListingServiceImpl implements ListingService {
             throw new ListingNotEditableException(id.toString());
         }
 
-        listing.setStatus(ListingStatus.UNSOLD);
+        listing.setStatus(ListingStatus.CANCELLED);
         listing.setUpdatedAt(Instant.now());
         listingRepository.save(listing);
     }
@@ -163,34 +163,6 @@ public class ListingServiceImpl implements ListingService {
             listing.setUpdatedAt(Instant.now());
             listingRepository.save(listing);
         });
-    }
-
-    // helpers
-
-    private Listing findListingOwnedBy(UUID id, String sellerId) {
-        Listing listing = listingRepository.findById(id)
-                .orElseThrow(() -> new ListingNotFoundException(id.toString()));
-
-        if (!listing.getSellerId().equals(sellerId)) {
-            throw new ListingNotFoundException(id.toString());
-        }
-
-        return listing;
-    }
-
-    private List<ListingImage> buildImages(List<String> imageUrls, Listing listing) {
-        if (imageUrls == null || imageUrls.isEmpty()) {
-            return new ArrayList<>();
-        }
-        List<ListingImage> images = new ArrayList<>();
-        for (int i = 0; i < imageUrls.size(); i++) {
-            images.add(ListingImage.builder()
-                    .imageUrl(imageUrls.get(i))
-                    .displayOrder(i)
-                    .listing(listing)
-                    .build());
-        }
-        return images;
     }
 
     @Override
@@ -228,16 +200,41 @@ public class ListingServiceImpl implements ListingService {
         }
     }
 
+    // helpers
+
+    private Listing findListingOwnedBy(UUID id, String sellerId) {
+        Listing listing = listingRepository.findById(id)
+                .orElseThrow(() -> new ListingNotFoundException(id.toString()));
+
+        if (!listing.getSellerId().equals(sellerId)) {
+            throw new ListingNotFoundException(id.toString());
+        }
+
+        return listing;
+    }
+
+    private List<ListingImage> buildImages(List<String> imageUrls, Listing listing) {
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<ListingImage> images = new ArrayList<>();
+        for (int i = 0; i < imageUrls.size(); i++) {
+            images.add(ListingImage.builder()
+                    .imageUrl(imageUrls.get(i))
+                    .displayOrder(i)
+                    .listing(listing)
+                    .build());
+        }
+        return images;
+    }
+
     private ListingStatus determineClosingStatus(Listing listing) {
-        // tidak ada bid sama sekali -> UNSOLD
         if (listing.getBidCount() == 0) {
             return ListingStatus.UNSOLD;
         }
-        // tidak ada reserve price -> langsung WON
         if (listing.getReservePrice() == null) {
             return ListingStatus.WON;
         }
-        // reserve price terpenuhi -> WON, tidak -> UNSOLD
         return listing.getCurrentPrice().compareTo(listing.getReservePrice()) >= 0
                 ? ListingStatus.WON
                 : ListingStatus.UNSOLD;
