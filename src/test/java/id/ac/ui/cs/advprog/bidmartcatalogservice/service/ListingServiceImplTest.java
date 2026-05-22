@@ -676,4 +676,117 @@ class ListingServiceImplTest {
 
         verify(listingRepository, never()).save(any());
     }
+
+    @Test
+    void getListingById_withNullCategory_returnsNullCategory() {
+        listing.setCategory(null);
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+
+        ListingResponse response = listingService.getListingById(listingId);
+
+        assertThat(response.getCategory()).isNull();
+    }
+
+    @Test
+    void searchListings_withBlankKeyword_treatsAsNoKeyword() {
+        when(listingRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(listing)));
+
+        listingService.searchListings("   ", null, null, null,
+                Instant.now().plusSeconds(3600), Instant.now(),
+                null, PageRequest.of(0, 20));
+
+        verify(listingRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void updateListing_withNewDescription_updatesDescription() {
+        UpdateListingRequest request = UpdateListingRequest.builder()
+                .description("Deskripsi baru yang lebih lengkap")
+                .build();
+
+        when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        listingService.updateListing(listingId, sellerId, request);
+
+        assertThat(listing.getDescription()).isEqualTo("Deskripsi baru yang lebih lengkap");
+        verify(listingRepository).save(listing);
+    }
+
+    @Test
+    void searchListings_withEndsBefore_filtersCorrectly() {
+        Page<Listing> page = new PageImpl<>(List.of(listing));
+        when(listingRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(page);
+
+        Page<ListingResponse> result = listingService.searchListings(
+                null, null, null, null,
+                Instant.now().plusSeconds(3600), null,
+                null, PageRequest.of(0, 20));
+
+        assertThat(result.getContent()).hasSize(1);
+    }
+
+    @Test
+    void searchListings_withEndsAfter_filtersCorrectly() {
+        Page<Listing> page = new PageImpl<>(List.of(listing));
+        when(listingRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(page);
+
+        Page<ListingResponse> result = listingService.searchListings(
+                null, null, null, null,
+                null, Instant.now().minusSeconds(3600),
+                null, PageRequest.of(0, 20));
+
+        assertThat(result.getContent()).hasSize(1);
+    }
+
+    @Test
+    void searchListings_withMinAndMaxPrice_filtersCorrectly() {
+        Page<Listing> page = new PageImpl<>(List.of(listing));
+        when(listingRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(page);
+
+        Page<ListingResponse> result = listingService.searchListings(
+                null, null,
+                new BigDecimal("1000000"), new BigDecimal("10000000"),
+                null, null,
+                null, PageRequest.of(0, 20));
+
+        assertThat(result.getContent()).hasSize(1);
+    }
+
+    @Test
+    void searchListings_withCategoryId_filtersCorrectly() {
+        Page<Listing> page = new PageImpl<>(List.of(listing));
+        when(listingRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(page);
+
+        Page<ListingResponse> result = listingService.searchListings(
+                null, categoryId, null, null,
+                null, null,
+                null, PageRequest.of(0, 20));
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getId()).isEqualTo(listingId);
+    }
+
+    @Test
+    void createListing_withEmptyImageUrls_savesWithNoImages() {
+        CreateListingRequest request = CreateListingRequest.builder()
+                .title("Laptop Gaming")
+                .categoryId(categoryId)
+                .startingPrice(new BigDecimal("5000000"))
+                .durationMinutes(60)
+                .imageUrls(List.of())
+                .build();
+
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(listingRepository.save(any(Listing.class))).thenReturn(listing);
+
+        ListingResponse response = listingService.createListing(sellerId, "seller1", request);
+
+        assertThat(response).isNotNull();
+    }
 }
