@@ -61,17 +61,18 @@ public class ListingController {
         return ResponseEntity.ok(listingService.getListingById(id));
     }
 
-    // GET /api/listings/my
+    // GET /api/listings/my?page=&size=
     // seller
     @GetMapping("/my")
-    public ResponseEntity<List<ListingResponse>> getMyListings(
+    public ResponseEntity<Page<ListingResponse>> getMyListings(
             @RequestHeader("X-User-Id") String userId,
-            @RequestHeader("X-User-Role") String userRole) {
+            @RequestHeader("X-User-Role") String userRole,
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
 
         if (!"SELLER".equals(userRole) && !"ADMIN".equals(userRole)) {
             throw new ForbiddenException("view own listings");
         }
-        return ResponseEntity.ok(listingService.getMyListings(userId));
+        return ResponseEntity.ok(listingService.getMyListings(userId, pageable));
     }
 
     // POST /api/listings

@@ -18,7 +18,7 @@ import java.util.UUID;
 @Repository
 public interface ListingRepository extends JpaRepository<Listing, UUID>, JpaSpecificationExecutor<Listing> {
 
-    List<Listing> findBySellerId(String sellerId);
+    Page<Listing> findBySellerId(String sellerId, Pageable pageable);
 
     // search listing aktif dengan filter, untuk buyer browse
     @Query("""
