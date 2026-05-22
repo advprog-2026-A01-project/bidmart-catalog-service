@@ -21,15 +21,15 @@ public interface ListingRepository extends JpaRepository<Listing, UUID> {
 
     // search listing aktif dengan filter, untuk buyer browse
     @Query("""
-            SELECT l FROM Listing l
-            WHERE (:keyword IS NULL OR LOWER(l.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')))
-            AND (:categoryId IS NULL OR l.category.id = :categoryId)
-            AND (:minPrice IS NULL OR l.currentPrice >= :minPrice)
-            AND (:maxPrice IS NULL OR l.currentPrice <= :maxPrice)
-            AND (:#{#endsBefore} IS NULL OR l.endTime <= :endsBefore)
-            AND (:#{#endsAfter} IS NULL OR l.endTime >= :endsAfter)
-            AND l.status IN :statuses
-            """)
+        SELECT l FROM Listing l
+        WHERE (:keyword IS NULL OR LOWER(l.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
+        AND (:categoryId IS NULL OR l.category.id = :categoryId)
+        AND (:minPrice IS NULL OR l.currentPrice >= :minPrice)
+        AND (:maxPrice IS NULL OR l.currentPrice <= :maxPrice)
+        AND (:endsBefore IS NULL OR l.endTime <= :endsBefore)
+        AND (:endsAfter IS NULL OR l.endTime >= :endsAfter)
+        AND l.status IN :statuses
+        """)
     Page<Listing> searchListings(
             @Param("keyword") String keyword,
             @Param("categoryId") UUID categoryId,
