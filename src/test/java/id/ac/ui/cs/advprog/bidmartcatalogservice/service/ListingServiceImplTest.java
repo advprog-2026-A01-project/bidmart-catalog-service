@@ -21,6 +21,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -148,7 +150,7 @@ class ListingServiceImplTest {
     @Test
     void searchListings_returnsPageOfListings() {
         Page<Listing> page = new PageImpl<>(List.of(listing));
-        when(listingRepository.searchListings(any(), any(), any(), any(), any(), any(), any(), any()))
+        when(listingRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(page);
 
         Page<ListingResponse> result = listingService.searchListings(
@@ -161,7 +163,7 @@ class ListingServiceImplTest {
     @Test
     void searchListings_withKeyword_passesKeywordToRepository() {
         Page<Listing> page = new PageImpl<>(List.of(listing));
-        when(listingRepository.searchListings(eq("laptop"), any(), any(), any(), any(), any(), any(), any()))
+        when(listingRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(page);
 
         Page<ListingResponse> result = listingService.searchListings(

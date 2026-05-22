@@ -12,6 +12,7 @@ import id.ac.ui.cs.advprog.bidmartcatalogservice.model.ListingImage;
 import id.ac.ui.cs.advprog.bidmartcatalogservice.model.ListingStatus;
 import id.ac.ui.cs.advprog.bidmartcatalogservice.repository.CategoryRepository;
 import id.ac.ui.cs.advprog.bidmartcatalogservice.repository.ListingRepository;
+import id.ac.ui.cs.advprog.bidmartcatalogservice.repository.ListingSpecification;
 import id.ac.ui.cs.advprog.bidmartcatalogservice.service.ListingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -81,8 +82,9 @@ public class ListingServiceImpl implements ListingService {
                 : statuses;
 
         return listingRepository
-                .searchListings(keyword, categoryId, minPrice, maxPrice,
-                        endsBefore, endsAfter, effectiveStatuses, pageable)
+                .findAll(ListingSpecification.build(
+                        keyword, categoryId, minPrice, maxPrice,
+                        endsBefore, endsAfter, effectiveStatuses), pageable)
                 .map(ListingResponse::from);
     }
 
