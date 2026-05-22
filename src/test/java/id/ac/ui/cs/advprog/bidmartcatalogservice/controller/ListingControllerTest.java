@@ -127,14 +127,29 @@ class ListingControllerTest {
 
     @Test
     void getMyListings_returnsSellerListings() throws Exception {
-        when(listingService.getMyListings(userId)).thenReturn(List.of(sampleResponse));
+        when(listingService.getMyListings(eq(userId), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(sampleResponse)));
 
         mockMvc.perform(get("/api/listings/my")
                         .header("X-Gateway-Secret", gatewaySecret)
                         .header("X-User-Id", userId)
                         .header("X-User-Role", "SELLER"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].sellerId").value(userId));
+                .andExpect(jsonPath("$.content[0].sellerId").value(userId));
+    }
+
+    @Test
+    void getMyListings_withPaginationParams_returnsPagedResult() throws Exception {
+        when(listingService.getMyListings(eq(userId), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(sampleResponse)));
+
+        mockMvc.perform(get("/api/listings/my?page=0&size=10")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId)
+                        .header("X-User-Role", "SELLER"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test

@@ -177,21 +177,49 @@ class ListingServiceImplTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void getMyListings_returnsSellersListings() {
-        when(listingRepository.findBySellerId(sellerId)).thenReturn(List.of(listing));
+    void getMyListings_returnsPaginatedSellerListings() {
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<Listing> page = new PageImpl<>(List.of(listing));
+        when(listingRepository.findBySellerId(sellerId, pageable)).thenReturn(page);
 
-        List<ListingResponse> result = listingService.getMyListings(sellerId);
+        Page<ListingResponse> result = listingService.getMyListings(sellerId, pageable);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getSellerId()).isEqualTo(sellerId);
+        assertThat(result.getContent().get(0).getSellerId()).isEqualTo(sellerId);
     }
 
     @Test
-    void getMyListings_withNoListings_returnsEmptyList() {
-        when(listingRepository.findBySellerId(sellerId)).thenReturn(List.of());
+    void getMyListings_withNoListings_returnsEmptyPage() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(listingRepository.findBySellerId(sellerId, pageable))
+                .thenReturn(Page.empty(pageable));
 
-        List<ListingResponse> result = listingService.getMyListings(sellerId);
+        Page<ListingResponse> result = listingService.getMyListings(sellerId, pageable);
 
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getMyListings_withCustomPageSize_respectsPageSize() {
+        Pageable pageable = PageRequest.of(0, 5);
+        Page<Listing> page = new PageImpl<>(List.of(listing), pageable, 1);
+        when(listingRepository.findBySellerId(sellerId, pageable)).thenReturn(page);
+
+        Page<ListingResponse> result = listingService.getMyListings(sellerId, pageable);
+
+        assertThat(result.getSize()).isEqualTo(5);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void getMyListings_secondPage_returnsCorrectPage() {
+        Pageable pageable = PageRequest.of(1, 10);
+        when(listingRepository.findBySellerId(sellerId, pageable))
+                .thenReturn(Page.empty(pageable));
+
+        Page<ListingResponse> result = listingService.getMyListings(sellerId, pageable);
+
+        assertThat(result.getNumber()).isEqualTo(1);
         assertThat(result).isEmpty();
     }
 
