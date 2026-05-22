@@ -215,7 +215,7 @@ class ListingServiceImplTest {
 
     @Test
     void updateListing_withListingHasBids_throwsListingNotEditableException() {
-        listing.setBidCount(1); // sudah ada bid
+        listing.setBidCount(1);
         UpdateListingRequest request = UpdateListingRequest.builder()
                 .title("New Title")
                 .build();
@@ -256,13 +256,13 @@ class ListingServiceImplTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void cancelListing_withDraftListing_setsStatusToUnsold() {
+    void cancelListing_withDraftListing_setsStatusToCancelled() {
         when(listingRepository.findById(listingId)).thenReturn(Optional.of(listing));
         when(listingRepository.save(any(Listing.class))).thenReturn(listing);
 
         listingService.cancelListing(listingId, sellerId);
 
-        assertThat(listing.getStatus()).isEqualTo(ListingStatus.UNSOLD);
+        assertThat(listing.getStatus()).isEqualTo(ListingStatus.CANCELLED);
         verify(listingRepository).save(listing);
     }
 
@@ -322,8 +322,9 @@ class ListingServiceImplTest {
     void updateListingPriceAndBidCount_withNonExistingListing_doesNothing() {
         when(listingRepository.findById(listingId)).thenReturn(Optional.empty());
 
-        // Tidak throw exception — silent ignore
         listingService.updateListingPriceAndBidCount(listingId, new BigDecimal("6000000"), 3);
+
+        verify(listingRepository, never()).save(any());
     }
 
     // -------------------------------------------------------------------------
@@ -410,8 +411,8 @@ class ListingServiceImplTest {
     }
 
     // -------------------------------------------------------------------------
-// closeExpiredListings
-// -------------------------------------------------------------------------
+    // closeExpiredListings
+    // -------------------------------------------------------------------------
 
     @Test
     void closeExpiredListings_withExpiredActiveListings_closesThemAll() {
@@ -507,7 +508,7 @@ class ListingServiceImplTest {
                 .category(category)
                 .startingPrice(new BigDecimal("1000000"))
                 .currentPrice(new BigDecimal("1500000"))
-                .reservePrice(null) // tidak ada reserve price
+                .reservePrice(null)
                 .durationMinutes(60)
                 .status(ListingStatus.ACTIVE)
                 .startTime(Instant.now().minus(2, ChronoUnit.HOURS))
