@@ -12,8 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
@@ -133,9 +131,27 @@ class ListingControllerTest {
 
         mockMvc.perform(get("/api/listings/my")
                         .header("X-Gateway-Secret", gatewaySecret)
-                        .header("X-User-Id", userId))
+                        .header("X-User-Id", userId)
+                        .header("X-User-Role", "SELLER"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].sellerId").value(userId));
+    }
+
+    @Test
+    void getMyListings_withBuyerRole_returns403() throws Exception {
+        mockMvc.perform(get("/api/listings/my")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId)
+                        .header("X-User-Role", "BUYER"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getMyListings_withMissingRoleHeader_returns400() throws Exception {
+        mockMvc.perform(get("/api/listings/my")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId))
+                .andExpect(status().isBadRequest());
     }
 
     // -------------------------------------------------------------------------
@@ -158,10 +174,70 @@ class ListingControllerTest {
                         .header("X-Gateway-Secret", gatewaySecret)
                         .header("X-User-Id", userId)
                         .header("X-Username", username)
+                        .header("X-User-Role", "SELLER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("Laptop Gaming"));
+    }
+
+    @Test
+    void createListing_withAdminRole_returnsCreated() throws Exception {
+        CreateListingRequest request = CreateListingRequest.builder()
+                .title("Laptop Gaming")
+                .categoryId(UUID.randomUUID())
+                .startingPrice(new BigDecimal("5000000"))
+                .durationMinutes(60)
+                .build();
+
+        when(listingService.createListing(eq(userId), eq(username), any(CreateListingRequest.class)))
+                .thenReturn(sampleResponse);
+
+        mockMvc.perform(post("/api/listings")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId)
+                        .header("X-Username", username)
+                        .header("X-User-Role", "ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void createListing_withBuyerRole_returns403() throws Exception {
+        CreateListingRequest request = CreateListingRequest.builder()
+                .title("Laptop Gaming")
+                .categoryId(UUID.randomUUID())
+                .startingPrice(new BigDecimal("5000000"))
+                .durationMinutes(60)
+                .build();
+
+        mockMvc.perform(post("/api/listings")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId)
+                        .header("X-Username", username)
+                        .header("X-User-Role", "BUYER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createListing_withMissingRoleHeader_returns400() throws Exception {
+        CreateListingRequest request = CreateListingRequest.builder()
+                .title("Laptop Gaming")
+                .categoryId(UUID.randomUUID())
+                .startingPrice(new BigDecimal("5000000"))
+                .durationMinutes(60)
+                .build();
+
+        mockMvc.perform(post("/api/listings")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId)
+                        .header("X-Username", username)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -176,6 +252,7 @@ class ListingControllerTest {
                         .header("X-Gateway-Secret", gatewaySecret)
                         .header("X-User-Id", userId)
                         .header("X-Username", username)
+                        .header("X-User-Role", "SELLER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -193,9 +270,31 @@ class ListingControllerTest {
         mockMvc.perform(put("/api/listings/" + listingId)
                         .header("X-Gateway-Secret", gatewaySecret)
                         .header("X-User-Id", userId)
+                        .header("X-User-Role", "SELLER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\": \"Updated Title\"}"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void updateListing_withBuyerRole_returns403() throws Exception {
+        mockMvc.perform(put("/api/listings/" + listingId)
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId)
+                        .header("X-User-Role", "BUYER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\": \"Updated Title\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateListing_withMissingRoleHeader_returns400() throws Exception {
+        mockMvc.perform(put("/api/listings/" + listingId)
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\": \"Updated Title\"}"))
+                .andExpect(status().isBadRequest());
     }
 
     // -------------------------------------------------------------------------
@@ -206,7 +305,8 @@ class ListingControllerTest {
     void cancelListing_withValidRequest_returnsNoContent() throws Exception {
         mockMvc.perform(delete("/api/listings/" + listingId)
                         .header("X-Gateway-Secret", gatewaySecret)
-                        .header("X-User-Id", userId))
+                        .header("X-User-Id", userId)
+                        .header("X-User-Role", "SELLER"))
                 .andExpect(status().isNoContent());
     }
 
@@ -217,9 +317,31 @@ class ListingControllerTest {
 
         mockMvc.perform(delete("/api/listings/" + listingId)
                         .header("X-Gateway-Secret", gatewaySecret)
-                        .header("X-User-Id", userId))
+                        .header("X-User-Id", userId)
+                        .header("X-User-Role", "SELLER"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void cancelListing_withBuyerRole_returns403() throws Exception {
+        mockMvc.perform(delete("/api/listings/" + listingId)
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId)
+                        .header("X-User-Role", "BUYER"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void cancelListing_withMissingRoleHeader_returns400() throws Exception {
+        mockMvc.perform(delete("/api/listings/" + listingId)
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId))
+                .andExpect(status().isBadRequest());
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/listings/{id}/publish
+    // -------------------------------------------------------------------------
 
     @Test
     void publishListing_withValidRequest_returnsOk() throws Exception {
@@ -228,7 +350,8 @@ class ListingControllerTest {
 
         mockMvc.perform(post("/api/listings/" + listingId + "/publish")
                         .header("X-Gateway-Secret", gatewaySecret)
-                        .header("X-User-Id", userId))
+                        .header("X-User-Id", userId)
+                        .header("X-User-Role", "SELLER"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(listingId.toString()));
     }
@@ -240,7 +363,25 @@ class ListingControllerTest {
 
         mockMvc.perform(post("/api/listings/" + listingId + "/publish")
                         .header("X-Gateway-Secret", gatewaySecret)
-                        .header("X-User-Id", userId))
+                        .header("X-User-Id", userId)
+                        .header("X-User-Role", "SELLER"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void publishListing_withBuyerRole_returns403() throws Exception {
+        mockMvc.perform(post("/api/listings/" + listingId + "/publish")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId)
+                        .header("X-User-Role", "BUYER"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void publishListing_withMissingRoleHeader_returns400() throws Exception {
+        mockMvc.perform(post("/api/listings/" + listingId + "/publish")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Id", userId))
+                .andExpect(status().isBadRequest());
     }
 }
