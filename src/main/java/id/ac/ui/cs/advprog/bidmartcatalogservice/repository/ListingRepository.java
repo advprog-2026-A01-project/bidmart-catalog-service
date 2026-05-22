@@ -26,8 +26,8 @@ public interface ListingRepository extends JpaRepository<Listing, UUID> {
             AND (:categoryId IS NULL OR l.category.id = :categoryId)
             AND (:minPrice IS NULL OR l.currentPrice >= :minPrice)
             AND (:maxPrice IS NULL OR l.currentPrice <= :maxPrice)
-            AND (:endsBefore IS NULL OR l.endTime <= :endsBefore)
-            AND (:endsAfter IS NULL OR l.endTime >= :endsAfter)
+            AND (CAST(:endsBefore AS java.time.Instant) IS NULL OR l.endTime <= :endsBefore)
+            AND (CAST(:endsAfter AS java.time.Instant) IS NULL OR l.endTime >= :endsAfter)
             AND l.status IN :statuses
             """)
     Page<Listing> searchListings(
