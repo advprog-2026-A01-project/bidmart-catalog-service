@@ -33,7 +33,7 @@ public interface ListingService {
     );
 
     // seller
-    List<ListingResponse> getMyListings(String sellerId);
+    Page<ListingResponse> getMyListings(String sellerId, Pageable pageable);
 
     // seller (hanya saat DRAFT dan belum ada bid)
     ListingResponse updateListing(UUID id, String sellerId, UpdateListingRequest request);
@@ -41,7 +41,7 @@ public interface ListingService {
     // seller (hanya saat DRAFT dan belum ada bid)
     void cancelListing(UUID id, String sellerId);
 
-    // internal (dipanggil oleh auction-service via REST)
+    // internal (dipanggil oleh auction-service via gRPC)
     boolean isListingBiddable(UUID id);
 
     // internal (dipanggil oleh RabbitMQ consumer saat ada bid masuk)

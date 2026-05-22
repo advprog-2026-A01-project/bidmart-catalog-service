@@ -90,10 +90,9 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ListingResponse> getMyListings(String sellerId) {
-        return listingRepository.findBySellerId(sellerId).stream()
-                .map(ListingResponse::from)
-                .toList();
+    public Page<ListingResponse> getMyListings(String sellerId, Pageable pageable) {
+        return listingRepository.findBySellerId(sellerId, pageable)
+                .map(ListingResponse::from);
     }
 
     @Override
